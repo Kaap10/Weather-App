@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .weather-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 300px;
+        }
+
+        .weather-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .weather-header h1 {
+            margin: 0;
+            color: #333;
+        }
+
+        .search-container {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .search-container input {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px 0 0 5px;
+        }
+
+        .search-container button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 0 5px 5px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .search-container button:hover {
+            background-color: #45a049;
+        }
+
+        .weather-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .city-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .temperature {
+            font-size: 48px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .description {
+            font-size: 18px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .details {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .details div {
+            text-align: center;
+        }
+
+        .details span {
+            display: block;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-container">
+        <div class="weather-header">
+            <h1>Weather App</h1>
+        </div>
+        <div class="search-container">
+            <input type="text" id="city-input" placeholder="Enter city name">
+            <button id="search-btn">Search</button>
+        </div>
+        <div class="weather-info">
+            <div class="city-name">--</div>
+            <div class="temperature">--°C</div>
+            <div class="description">--</div>
+            <div class="details">
+                <div>
+                    <span>Humidity</span>
+                    <span>--%</span>
+                </div>
+                <div>
+                    <span>Wind</span>
+                    <span>-- km/h</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getWeather(city) {
+            fetch(`https://wttr.in/${city}?format=j1`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Weather data:', data); // Log the data to the console
+
+                    // Parse and update the DOM with the fetched weather data
+                    const currentCondition = data.current_condition[0];
+                    const location = data.nearest_area[0];
+
+                    document.querySelector('.city-name').textContent = `${location.areaName[0].value}, ${location.country[0].value}`;
+                    document.querySelector('.temperature').textContent = `${currentCondition.temp_C}°C`;
+                    document.querySelector('.description').textContent = currentCondition.weatherDesc[0].value;
+                    document.querySelector('.details div:nth-child(1) span:nth-child(2)').textContent = `${currentCondition.humidity}%`;
+                    document.querySelector('.details div:nth-child(2) span:nth-child(2)').textContent = `${currentCondition.windspeedKmph} km/h`;
+                })
+                .catch(error => {
+                    console.error('There was a problem fetching the weather data:', error);
+                });
+        }
+
+        document.getElementById('search-btn').addEventListener('click', function() {
+            const city = document.getElementById('city-input').value;
+            if (city) {
+                getWeather(city);
+            }
+        });
+
+        // Initial weather fetch for London
+        getWeather('London');
+    </script>
+</body>
+</html>
