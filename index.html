@@ -7,20 +7,25 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            background-color: #000000;
+            color: #ffffff;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .weather-container {
             background-color: white;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
             padding: 20px;
-            width: 300px;
+            width: 100%;
+            max-width: 600px;
+            color: #333;
         }
 
         .weather-header {
@@ -74,10 +79,22 @@
             margin-bottom: 10px;
         }
 
+        .current-weather {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
         .temperature {
             font-size: 48px;
             font-weight: bold;
             color: #333;
+            margin-right: 20px;
+        }
+
+        .weather-icon {
+            width: 64px;
+            height: 64px;
         }
 
         .description {
@@ -102,6 +119,40 @@
             font-size: 14px;
             color: #888;
         }
+
+        .forecast {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .forecast-day {
+            text-align: center;
+            flex: 1;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            transition: transform 0.3s ease;
+        }
+
+        .forecast-day:hover {
+            transform: scale(1.05);
+        }
+
+        .forecast-icon {
+            width: 40px;
+            height: 40px;
+            margin: 10px 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
     </style>
 </head>
 <body>
@@ -113,9 +164,12 @@
             <input type="text" id="city-input" placeholder="Enter city name">
             <button id="search-btn">Search</button>
         </div>
-        <div class="weather-info">
+        <div class="weather-info fade-in">
             <div class="city-name">--</div>
-            <div class="temperature">--°C</div>
+            <div class="current-weather">
+                <div class="temperature">--°C</div>
+                <img id="weather-icon" src="" alt="Hemlo" class="weather-icon">
+            </div>
             <div class="description">--</div>
             <div class="details">
                 <div>
@@ -128,44 +182,108 @@
                 </div>
             </div>
         </div>
+        <div class="forecast fade-in">
+            <!-- Forecast days will be inserted here -->
+        </div>
     </div>
 
     <script>
-        function getWeather(city) {
+        function getWeatherIcon(code) {
+            if (code.includes('sunny') || code.includes('clear')) return '☀️';
+            if (code.includes('cloud')) return '☁️';
+            if (code.includes('rain')) return '🌧️';
+            if (code.includes('snow')) return '❄️';
+            if (code.includes('thunder')) return '⛈️';
+            return '🌤️';
+        }
+
+        function fetchWeatherData() {
+            const cityInput = document.getElementById('city-input');
+            const city = cityInput.value.trim();
+
+            if (!city) {
+                console.log('Please enter a city name');
+                return;
+            }
+            // https://wttr.in/${city}?format=j1
             fetch(`https://wttr.in/${city}?format=j1`)
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Network response was not ok');
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Weather data:', data); // Log the data to the console
+                    console.log('Weather Data:', data);
 
-                    // Parse and update the DOM with the fetched weather data
                     const currentCondition = data.current_condition[0];
                     const location = data.nearest_area[0];
 
                     document.querySelector('.city-name').textContent = `${location.areaName[0].value}, ${location.country[0].value}`;
                     document.querySelector('.temperature').textContent = `${currentCondition.temp_C}°C`;
+                    document.querySelector('.weather-icon').src = currentCondition.weatherIconUrl[0].value;
                     document.querySelector('.description').textContent = currentCondition.weatherDesc[0].value;
                     document.querySelector('.details div:nth-child(1) span:nth-child(2)').textContent = `${currentCondition.humidity}%`;
                     document.querySelector('.details div:nth-child(2) span:nth-child(2)').textContent = `${currentCondition.windspeedKmph} km/h`;
+
+                    const forecastContainer = document.querySelector('.forecast');
+                    forecastContainer.innerHTML = '';
+
+                    data.weather.forEach((day, index) => {
+                        if (index < 5) {
+                            const forecastDay = document.createElement('div');
+                            forecastDay.className = 'forecast-day';
+                            forecastDay.innerHTML = `
+                                <div>${new Date(day.date).toLocaleDateString('en-US', {weekday: 'short'})}</div>
+                                <div>${getWeatherIcon(day.hourly[4].weatherDesc[0].value)}</div>
+                                <div>${day.maxtempC}°C / ${day.mintempC}°C</div>
+                            `;
+                            forecastContainer.appendChild(forecastDay);
+                        }
+                    });
+
+                    document.querySelector('.weather-info').classList.remove('fade-in');
+                    document.querySelector('.forecast').classList.remove('fade-in');
+                    void document.querySelector('.weather-info').offsetWidth;
+                    void document.querySelector('.forecast').offsetWidth;
+                    document.querySelector('.weather-info').classList.add('fade-in');
+                    document.querySelector('.forecast').classList.add('fade-in');
                 })
                 .catch(error => {
-                    console.error('There was a problem fetching the weather data:', error);
+                    console.error('Error fetching weather data:', error);
+                    document.querySelector('.city-name').textContent = 'Error fetching data';
+                    document.querySelector('.temperature').textContent = '--°C';
+                    document.querySelector('.description').textContent = 'Please try again';
+                    document.querySelector('.details div:nth-child(1) span:nth-child(2)').textContent = '--%';
+                    document.querySelector('.details div:nth-child(2) span:nth-child(2)').textContent = '-- km/h';
+                    document.querySelector('.forecast').innerHTML = '';
                 });
         }
 
         document.getElementById('search-btn').addEventListener('click', function() {
-            const city = document.getElementById('city-input').value;
-            if (city) {
-                getWeather(city);
+    const city = document.getElementById('city-input').value;
+    // Fetch weather data from API (example URL)
+    fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=f67785e606599eb7b5909ff8ccdf98b6
+`)
+        .then(response => response.json())  
+        .then(data => {
+            const iconCode = data.weather[0].icon;
+            const iconUrl = `http://openweathermap.org/img/wn/${iconCode}@2x.png`;
+            const weatherIcon = document.getElementById('weather-icon').src=iconUrl;
+            weatherIcon.src = iconUrl;
+            weatherIcon.style.display = 'block';
+        })
+        .catch(error => console.error('Error fetching weather data:', error));
+});
+
+        document.getElementById('city-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                fetchWeatherData();
             }
         });
 
-        // Initial weather fetch for London
-        getWeather('London');
+        document.getElementById('city-input').value = 'London';
+        fetchWeatherData();
     </script>
 </body>
 </html>
