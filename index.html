@@ -263,7 +263,7 @@
         document.getElementById('search-btn').addEventListener('click', function() {
     const city = document.getElementById('city-input').value;
     // Fetch weather data from API (example URL)
-    fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=f67785e606599eb7b5909ff8ccdf98b6
+    fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=key
 `)
         .then(response => response.json())  
         .then(data => {
